@@ -12,10 +12,30 @@ export class ProformasCalculatedController {
     return this.proformasCalculatedService.create(createProformasCalculatedDto);
   }
 
-  @Get(':SOPNUMBE')
+  @Get(':SOPNUMBE/:COMPANY')
   async getProformasbysopnumbe(
-    @Param('SOPNUMBE') SOPNUMBE: string) {
-    return this.proformasCalculatedService.getProformasbysopnumbe(SOPNUMBE);
+    @Param('SOPNUMBE') SOPNUMBE: string,
+    @Param('COMPANY') COMPANY: string,) {
+    
+      if(COMPANY==='F5618'){
+        return this.proformasCalculatedService.getProformasbysopnumbeChacao(SOPNUMBE);
+      }else if(COMPANY==='F0016'){
+        return this.proformasCalculatedService.getProformasbysopnumbeManeiro(SOPNUMBE);
+      }else if(COMPANY==='F0015'){
+        return this.proformasCalculatedService.getProformasbysopnumbeCaroni(SOPNUMBE);
+      }else if(COMPANY==='F0004'){
+        return this.proformasCalculatedService.getProformasbysopnumbeHatillo(SOPNUMBE);
+      }else if(COMPANY==='F1099'){
+        return this.proformasCalculatedService.getProformasbysopnumbeBaruta(SOPNUMBE);
+      }else if(COMPANY==='S6759'){
+        return this.proformasCalculatedService.getProformasbysopnumbeSanDiego(SOPNUMBE);
+      }else if(COMPANY==='F7834'){
+        return this.proformasCalculatedService.getProformasbysopnumbeElTigre(SOPNUMBE);
+      }else if(COMPANY==='F2099'){
+        return this.proformasCalculatedService.getProformasbysopnumbeInvBaruta(SOPNUMBE);
+      }  
+
+    
   }
 
   @Get(':id')

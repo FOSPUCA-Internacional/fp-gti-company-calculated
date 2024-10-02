@@ -1,0 +1,304 @@
+[
+  {
+    "municipio": "Chacao",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "ManeiroB",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "Caroni",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "2024/03/13",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "2024/03/07",
+        "fechaF": "2024/03/12",
+        "porcentaje": 1.7
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "2024/03/06",
+        "fechaF": "",
+        "porcentaje": 2.5
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      }
+    ]
+  },
+  {
+    "municipio": "Hatillo",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "Baruta",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "SanDiego",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "ElTigreB",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "InvBaruta",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "ElTigre",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.75
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  },
+  {
+    "municipio": "Maneiro",
+    "impuestos": [
+      {
+        "nombre": "porcentaje_iva",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_islr",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0.02
+      },
+      {
+        "nombre": "porcentaje_iae",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      },
+      {
+        "nombre": "porcentaje_tf",
+        "fechaC": "",
+        "fechaF": "",
+        "porcentaje": 0
+      }
+    ]
+  }
+]

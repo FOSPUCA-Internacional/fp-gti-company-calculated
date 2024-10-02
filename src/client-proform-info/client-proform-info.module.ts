@@ -6,4 +6,4 @@ import { ClientInfoController } from './client-proform-info.controller';
   controllers: [ClientInfoController],
   providers: [ClientInfoService],
 })
-export class ClientCalculatedModule {}
+export class ClientInfoModule {}
