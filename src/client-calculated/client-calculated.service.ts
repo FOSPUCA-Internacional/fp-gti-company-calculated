@@ -5,6 +5,9 @@ import { UpdateClientCalculatedDto } from './dto/update-client-calculated.dto';
 import { GET_CLIENTS } from "graphql/clients/queries";
 import { GET_RATES } from "graphql/rates/queries";
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { GET_USERS } from '@/graphql/usersov/queries';
+import { GET_ARRAYPROFORMAS } from '@/graphql/proformasov/queries';
+
 
 @Injectable()
 export class ClientCalculatedService {
@@ -17,6 +20,7 @@ export class ClientCalculatedService {
   private apolloClientTigre: ApolloClient<any>;
   private apolloClientInvBaruta: ApolloClient<any>;
   private apolloClientSecundario: ApolloClient<any>;
+  private apolloClientOV: ApolloClient<any>;
 
   constructor() {
     try {
@@ -108,6 +112,16 @@ export class ClientCalculatedService {
     } catch (error) {
       console.error("Error initializing Apollo Client:", error);
     }
+
+    try {
+      this.apolloClientOV = new ApolloClient({
+        uri: 'http://localhost:4010/graphql',
+        cache: new InMemoryCache(),
+      });
+      console.log('Apollo Client initialized successfully.');
+    } catch (error) {
+      console.error("Error initializing Apollo Client:", error);
+    }
   }
 
   async getProformascalculatedChacao(CUSTNMBR, PAGE) {
@@ -160,8 +174,103 @@ export class ClientCalculatedService {
     } else if(usdnow < eurnow){
       tasabasenow = eurnow;
     }
+    
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'Chacao';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
   
-    // Obtener clientes
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    
     const clientsResult = await this.apolloClientchacao.query({
       query: GET_CLIENTS,
       variables: {
@@ -172,6 +281,23 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
+
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"CHACAO"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
   
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
@@ -285,21 +411,81 @@ export class ClientCalculatedService {
         }
   
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
-          montocalculado: montocalculado
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
   
@@ -357,7 +543,103 @@ export class ClientCalculatedService {
       tasabasenow = eurnow;
     }
   
-    // Obtener clientes
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'Maneiro';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
+  
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    
+
     const clientsResult = await this.apolloClientManeiro.query({
       query: GET_CLIENTS,
       variables: {
@@ -368,6 +650,23 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
+
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"MANEIRO2"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
   
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
@@ -480,21 +779,83 @@ export class ClientCalculatedService {
         }
   
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
+        const montoporcentual = (montobase * porcimpuesto) / 100;
+        const montocalculado = montobase + montoporcentual;
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
-  
     return resultados;
   }
 
@@ -548,7 +909,103 @@ export class ClientCalculatedService {
     } else if(usdnow < eurnow){
       tasabasenow = eurnow;
     }
+
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'Caroni';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
   
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+
     // Obtener clientes
     const clientsResult = await this.apolloClientCaroni.query({
       query: GET_CLIENTS,
@@ -560,7 +1017,25 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
-  
+
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"CARONI"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
+    //console.log(proformasarrayOV);
+    //console.log(proformasarray)
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
       const sopnumbe = cliente.SOPNUMBE.trim();
@@ -671,26 +1146,85 @@ export class ClientCalculatedService {
             tasabasearmon = EUR;
           }
         }
-  
+        
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
-          montocalculado: montocalculado
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
-  
     return resultados;
   }
 
@@ -745,7 +1279,102 @@ export class ClientCalculatedService {
       tasabasenow = eurnow;
     }
   
-    // Obtener clientes
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'Hatillo';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
+  
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    
     const clientsResult = await this.apolloClientHatillo.query({
       query: GET_CLIENTS,
       variables: {
@@ -756,6 +1385,23 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
+
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"HATILLO"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
   
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
@@ -869,24 +1515,83 @@ export class ClientCalculatedService {
         }
   
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
-          montocalculado: montocalculado
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
-  
     return resultados;
   }
 
@@ -941,7 +1646,7 @@ export class ClientCalculatedService {
       tasabasenow = eurnow;
     }
   
-    // Obtener clientes
+    
     const rif= CUSTNMBR+'T';
     const clientsResult = await this.apolloClientBaruta.query({
       query: GET_CLIENTS,
@@ -952,6 +1657,103 @@ export class ClientCalculatedService {
     });
 
     if (!clientsResult || clientsResult.data === null) {
+      const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'ManeiroB';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
+  
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+
+
       const clientsResult = await this.apolloClientBaruta.query({
         query: GET_CLIENTS,
         variables: {
@@ -963,6 +1765,23 @@ export class ClientCalculatedService {
       const { data: clientsData } = clientsResult;
       const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
   
+      const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"MANEIRO"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
+
       const resultados = [];
       for (const cliente of clientesConNombreCompletos) {
         const sopnumbe = cliente.SOPNUMBE.trim();
@@ -1075,33 +1894,213 @@ export class ClientCalculatedService {
           }
     
           const client = cliente.SOPNUMBE.trim();
-          const basebs = cliente.SUBTOTAL;
-          const base_imponible = parseFloat(basebs.toFixed(2));
-          const divi = base_imponible / tasabasearmon;
-          const montobase = divi * tasabasenow;
-    
-          resultados.push({
-            comentario:comentario,
-            sopnumbe: client,
-            basereal: basebs,
-            fechasEmisionOriginal:fechasEmisionOriginal,
-            montobase: montobase
-          });
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
+        const base_imponible = parseFloat(basebs.toFixed(2));
+        const divi = base_imponible / tasabasearmon;
+        const montobase = divi * tasabasenow;
+        const montoporcentual = (montobase * porcimpuesto) / 100;
+        const montocalculado = montobase + montoporcentual;
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
+        });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
         }
       }
+    }
     return resultados;
     } else{
       const rif= CUSTNMBR+'T';
-      const clientsResult = await this.apolloClientBaruta.query({
-        query: GET_CLIENTS,
-        variables: {
-          custnmbr: rif,
-          page: PAGE,
+
+      const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'ElTigreB';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
         }
-      });
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
+  
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+
+      try {
+        const clientOV = await this.apolloClientOV.query({
+          query: GET_USERS,
+          variables: {
+            usuario: CUSTNMBR,
+          },
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
       const { data: clientsData } = clientsResult;
       const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
+      
+      const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
     
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"TIGRE"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
+
       const resultados = [];
       for (const cliente of clientesConNombreCompletos) {
         const sopnumbe = cliente.SOPNUMBE.trim();
@@ -1212,25 +2211,85 @@ export class ClientCalculatedService {
               tasabasearmon = EUR;
             }
           }
-    
-          const client = cliente.SOPNUMBE.trim();
-          const basebs = cliente.SUBTOTAL;
-          const base_imponible = parseFloat(basebs.toFixed(2));
-          const divi = base_imponible / tasabasearmon;
-          const montobase = divi * tasabasenow;
-          const montoporcentual = (montobase * porcimpuesto) / 100;
-          const montocalculado = montobase + montoporcentual;
-    
-          resultados.push({
-            comentario:comentario,
-            sopnumbe: client,
-            basereal: basebs,
-            fechasEmisionOriginal:fechasEmisionOriginal,
-            montobase: montobase,
-            montocalculado: montocalculado
-          });
+
+        const client = cliente.SOPNUMBE.trim();
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
+        const base_imponible = parseFloat(basebs.toFixed(2));
+        const divi = base_imponible / tasabasearmon;
+        const montobase = divi * tasabasenow;
+        const montoporcentual = (montobase * porcimpuesto) / 100;
+        const montocalculado = montobase + montoporcentual;
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
+        });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
         }
       }
+    }
       return resultados;
     }
   }
@@ -1285,8 +2344,103 @@ export class ClientCalculatedService {
     } else if(usdnow < eurnow){
       tasabasenow = eurnow;
     }
+    
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'SanDiego';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
   
-    // Obtener clientes
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    
     const clientsResult = await this.apolloClientSDiego.query({
       query: GET_CLIENTS,
       variables: {
@@ -1297,7 +2451,24 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
-  
+    
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"SAN_DIEGO"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
+
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
       const sopnumbe = cliente.SOPNUMBE.trim();
@@ -1410,24 +2581,83 @@ export class ClientCalculatedService {
         }
   
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
-          montocalculado: montocalculado
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
-  
     return resultados;
   }
 
@@ -1641,7 +2871,6 @@ export class ClientCalculatedService {
     const nowwwwn = noww12.split('T');
     const fechafechafecha = new Date(nowwwwn[0]);
   
-    // Obtener tasas de cambio
     const ratesResult = await this.apolloClientSecundario.query({
       query: GET_RATES,
       variables: {
@@ -1678,7 +2907,101 @@ export class ClientCalculatedService {
       tasabasenow = eurnow;
     }
   
-    // Obtener clientes
+    const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'InvBaruta';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+    
+    const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+
+    const clientOV = await this.apolloClientOV.query({
+      query: GET_USERS,
+      variables: {
+        usuario: CUSTNMBR,
+      }
+    });
+
+    const { data: clientOVData } = clientOV;
+    const clientesOV = clientOVData.findUSER || [];
+    console.log(clientesOV)
+    const obtenerinfocliente = () => {
+      const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
+      //console.log(clientesOV.especial)
+        switch (clientesOV.especial) {
+          case 1:
+            result.especial = clientesOV.especial;
+            break;
+          default:
+            result.especial = 0;
+            break;
+        }
+        switch (clientesOV.aplica_islr) {
+          case 1:
+            result.aplica_islr = clientesOV.aplica_islr;
+            break;
+          default:
+            result.aplica_islr = 0;
+            break;
+        }
+        switch (clientesOV.aplica_iae) {
+          case 1:
+            result.aplica_iae = clientesOV.aplica_iae;
+            break;
+          default:
+            result.aplica_iae = 0;
+            break;
+        }
+        switch (clientesOV.aplica_tf) {
+          case 1:
+            result.aplica_tf =  clientesOV.aplica_tf;
+            break;
+          default:
+            result.aplica_tf = 0;
+            break;
+        }
+      
+      return result;
+    };
+  
+    const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
+
+    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
     const clientsResult = await this.apolloClientInvBaruta.query({
       query: GET_CLIENTS,
@@ -1690,7 +3013,24 @@ export class ClientCalculatedService {
   
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
-  
+    
+    const proformasarray=[];
+    for (const proforma of clientesConNombreCompletos) {
+      const sopnumbe = proforma.SOPNUMBE.trim();
+      proformasarray.push(sopnumbe);
+    }
+    
+    const proformasOV = await this.apolloClientOV.query({
+      query: GET_ARRAYPROFORMAS,
+      variables: {
+        sopnumbe: proformasarray,
+        empresa:"BARUTA"
+      }
+    });
+
+    const { data: proformasData } = proformasOV;
+    const proformasarrayOV = proformasData.findCount || [];
+
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
       const sopnumbe = cliente.SOPNUMBE.trim();
@@ -1771,7 +3111,7 @@ export class ClientCalculatedService {
         for (const tasa of tasasEUR) {
           if (new Date(tasa.fecha).getTime === fechaDate.getTime) {
               EUR = tasa.tasa;
-              break; // Exit the loop once a match is found
+              break; 
           }
         }
         for (const tasa of tasasUSD) {
@@ -1803,21 +3143,81 @@ export class ClientCalculatedService {
         }
   
         const client = cliente.SOPNUMBE.trim();
-        const basebs = cliente.SUBTOTAL;
+        const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
         const base_imponible = parseFloat(basebs.toFixed(2));
         const divi = base_imponible / tasabasearmon;
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
-  
-        resultados.push({
-          comentario:comentario,
-          sopnumbe: client,
-          basereal: basebs,
-          fechasEmisionOriginal:fechasEmisionOriginal,
-          montobase: montobase,
-          montocalculado: montocalculado
+        const base_imponible_rebaja=
+          (
+            montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            montobase*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            montobase*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+        const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+        const impuesto= (montobase*impuesto_rebaja)/100;
+        const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+        console.log(base_imponible_rebaja)
+        const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+        const proformasarrayval= [];
+        proformasarrayOV.forEach(proformaarray => {
+          const client2=proformaarray.numero_documento;
+          if(proformaarray.numero_documento === client){
+            proformasarrayval.push({
+              client2:client2,
+              valida:1
+            })
+          }
+        })
+        let flag1=0;
+        proformasarrayval.forEach(proformaarray => {
+          if(proformaarray.client2 === client && proformaarray.valida===1){
+            const montoporcentualbase = (basebs * porcimpuesto) / 100;
+            const montocalculadobase = montoporcentualbase + basebs;
+            const base_imponible_rebaja_base=
+            (
+              base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+          const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+          const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+          const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+          console.log(base_imponible_rebaja_base)
+          const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
+                probable:parseFloat(probable_base.toFixed(2))
+              });
+              flag1=1;
+          }
         });
+        if(flag1===0){
+              resultados.push({
+                comentario:comentario,
+                sopnumbe: client,
+                basereal: parseFloat(basebs.toFixed(2)),
+                fechasEmisionOriginal:fechasEmisionOriginal,
+                montobase:parseFloat(montobase.toFixed(2)),
+                montocalculado: parseFloat(montocalculado.toFixed(2)),
+                total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
+                probable:parseFloat(probable.toFixed(2))
+              });
+        }
       }
     }
   
