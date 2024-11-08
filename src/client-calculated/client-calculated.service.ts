@@ -25,7 +25,7 @@ export class ClientCalculatedService {
   constructor() {
     try {
       this.apolloClientchacao = new ApolloClient({
-        uri: 'http://localhost:4001/graphql',
+        uri: 'http://company-chacao-api-contenedor:4001/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -35,7 +35,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientManeiro = new ApolloClient({
-        uri: 'http://localhost:4002/graphql',
+        uri: 'http://company-maneiro-api-contenedor:4002/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -45,7 +45,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientCaroni = new ApolloClient({
-        uri: 'http://localhost:4000/graphql',
+        uri: 'http://company-caroni-api-contenedor:4000/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -55,7 +55,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientHatillo = new ApolloClient({
-        uri: 'http://localhost:4003/graphql',
+        uri: 'http://company-hatillo-api-contenedor:4003/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -65,7 +65,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientBaruta = new ApolloClient({
-        uri: 'http://localhost:4004/graphql',
+        uri: 'http://company-baruta-api-contenedor:4004/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -75,7 +75,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientSDiego = new ApolloClient({
-        uri: 'http://localhost:4005/graphql',
+        uri: 'http://company-sdiego-api-contenedor:4005/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -85,7 +85,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientTigre = new ApolloClient({
-        uri: 'http://localhost:4006/graphql',
+        uri: 'http://company-tigre-api-contenedor:4006/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -95,7 +95,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientInvBaruta = new ApolloClient({
-        uri: 'http://localhost:4009/graphql',
+        uri: 'http://company-invbaruta-api-contenedor:4009/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -105,7 +105,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientSecundario = new ApolloClient({
-        uri: 'http://localhost:4008/graphql',
+        uri: 'http://company-rates-api-contenedor:4008/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -115,7 +115,7 @@ export class ClientCalculatedService {
 
     try {
       this.apolloClientOV = new ApolloClient({
-        uri: 'http://localhost:4010/graphql',
+        uri: 'http://contenedor_ov_api:4010/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -127,6 +127,10 @@ export class ClientCalculatedService {
   async getProformascalculatedChacao(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -298,7 +302,8 @@ export class ClientCalculatedService {
 
     const { data: proformasData } = proformasOV;
     const proformasarrayOV = proformasData.findCount || [];
-  
+    
+    
     const resultados = [];
     for (const cliente of clientesConNombreCompletos) {
       const sopnumbe = cliente.SOPNUMBE.trim();
@@ -310,6 +315,45 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
   
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
@@ -463,8 +507,24 @@ export class ClientCalculatedService {
           console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -476,8 +536,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -495,6 +571,10 @@ export class ClientCalculatedService {
   async getProformascalculatedManeiro(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -584,7 +664,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -595,7 +675,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -637,7 +717,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
 
     const clientsResult = await this.apolloClientManeiro.query({
@@ -679,7 +759,49 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
-  
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
+
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
         const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -798,7 +920,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -831,8 +953,24 @@ export class ClientCalculatedService {
           console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -844,8 +982,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -862,6 +1016,10 @@ export class ClientCalculatedService {
   async getProformascalculatedCaroni(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -951,7 +1109,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -962,7 +1120,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -1004,7 +1162,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
 
     // Obtener clientes
     const clientsResult = await this.apolloClientCaroni.query({
@@ -1014,7 +1172,7 @@ export class ClientCalculatedService {
         page: PAGE,
       }
     });
-  
+  //console.log(clientsResult)
     const { data: clientsData } = clientsResult;
     const clientesConNombreCompletos = clientsData.clientProformasByRIF.proformas || [];
 
@@ -1023,7 +1181,7 @@ export class ClientCalculatedService {
       const sopnumbe = proforma.SOPNUMBE.trim();
       proformasarray.push(sopnumbe);
     }
-    
+    //console.log(proformasarray)
     const proformasOV = await this.apolloClientOV.query({
       query: GET_ARRAYPROFORMAS,
       variables: {
@@ -1047,7 +1205,49 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
-  
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
+
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
         const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -1197,11 +1397,26 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          ////console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -1213,8 +1428,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -1231,6 +1462,10 @@ export class ClientCalculatedService {
   async getProformascalculatedHatillo(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -1320,7 +1555,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -1331,7 +1566,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -1373,7 +1608,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
     const clientsResult = await this.apolloClientHatillo.query({
       query: GET_CLIENTS,
@@ -1414,7 +1649,49 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
-  
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
+
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
         const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -1534,7 +1811,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -1567,8 +1844,24 @@ export class ClientCalculatedService {
           console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -1580,8 +1873,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -1598,6 +1907,10 @@ export class ClientCalculatedService {
   async getProformascalculatedBaruta(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -1698,7 +2011,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -1709,7 +2022,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -1751,7 +2064,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
 
 
       const clientsResult = await this.apolloClientBaruta.query({
@@ -1793,7 +2106,49 @@ export class ClientCalculatedService {
         const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
         const day = formato.getUTCDate().toString().padStart(2, '0');
         const fechaa = `${year}-${month}-${day}`;
-    
+        const fechaaa=`${year}-${month}-${day}`;
+        if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+            
+          const formato = new Date(cliente.work_history[0]?.USRDAT02);
+          
+          const day = (formato.getDate()+1).toString().padStart(2, '0');
+          const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+          const year = formato.getFullYear();
+          fecha_emision_formato= `${day}-${month}-${year}`;
+          fecha_emision_original= `${year}-${month}-${day}`;
+          //console.log(fecha_emision_original)
+        } else {
+          fecha_emision_formato=fechaa;
+          fecha_emision_original=fechaaa; 
+        }
+
+        const fecha1=new Date(cliente.DOCDATE).getTime();
+        const now=new Date().getTime();
+        const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+        if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+          if(now>fecha1){
+            vigencia= 'VENCIDA';
+          }else{
+            vigencia= 'VIGENTE';
+          }
+        }else{
+          if(now>fecha2){
+            vigencia= 'VENCIDA';
+          }else{
+            vigencia= 'VIGENTE';
+          }
+        } 
+        const fecha = new Date(cliente.CREATDDT);
+        const opciones: Intl.DateTimeFormatOptions = {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+        };
+        fechaFormateada = fecha.toLocaleString('en', opciones);
+
         let fechasEmisionOriginal = [];
         if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
           const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -1913,7 +2268,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -1943,11 +2298,27 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -1959,8 +2330,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -2016,7 +2403,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -2027,7 +2414,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -2069,7 +2456,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
 
       try {
         const clientOV = await this.apolloClientOV.query({
@@ -2112,7 +2499,49 @@ export class ClientCalculatedService {
         const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
         const day = formato.getUTCDate().toString().padStart(2, '0');
         const fechaa = `${year}-${month}-${day}`;
-    
+        const fechaaa=`${year}-${month}-${day}`;
+        if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+            
+          const formato = new Date(cliente.work_history[0]?.USRDAT02);
+          
+          const day = (formato.getDate()+1).toString().padStart(2, '0');
+          const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+          const year = formato.getFullYear();
+          fecha_emision_formato= `${day}-${month}-${year}`;
+          fecha_emision_original= `${year}-${month}-${day}`;
+          //console.log(fecha_emision_original)
+        } else {
+          fecha_emision_formato=fechaa;
+          fecha_emision_original=fechaaa; 
+        }
+
+        const fecha1=new Date(cliente.DOCDATE).getTime();
+        const now=new Date().getTime();
+        const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+        if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+          if(now>fecha1){
+            vigencia= 'VENCIDA';
+          }else{
+            vigencia= 'VIGENTE';
+          }
+        }else{
+          if(now>fecha2){
+            vigencia= 'VENCIDA';
+          }else{
+            vigencia= 'VIGENTE';
+          }
+        } 
+        const fecha = new Date(cliente.CREATDDT);
+        const opciones: Intl.DateTimeFormatOptions = {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+        };
+        fechaFormateada = fecha.toLocaleString('en', opciones);
+
         let fechasEmisionOriginal = [];
         if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
           const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -2232,7 +2661,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -2262,11 +2691,27 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -2278,8 +2723,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -2297,6 +2758,10 @@ export class ClientCalculatedService {
   async getProformascalculatedSanDiego(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -2386,7 +2851,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -2397,7 +2862,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -2439,7 +2904,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
     const clientsResult = await this.apolloClientSDiego.query({
       query: GET_CLIENTS,
@@ -2480,6 +2945,48 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
   
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
@@ -2600,7 +3107,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -2630,11 +3137,27 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -2646,8 +3169,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -2664,6 +3203,10 @@ export class ClientCalculatedService {
   async getProformascalculatedElTigre(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -2735,7 +3278,49 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
-  
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
+
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
         const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -2844,8 +3429,24 @@ export class ClientCalculatedService {
         const montocalculado = montobase + montoporcentual;
   
         resultados.push({
+          numero_documento: cliente.SOPNUMBE.trim(),
+          cuenta_contrato: cliente.PRSTADCD.trim(),
+          base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+          base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+          porcentaje_impuesto: comentario,
+          total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+          total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+          monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+          monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+          fecha_emision:fechaaa,
+          fecha_emision_formato:fecha_emision_formato,
+          fecha_emision_original:fecha_emision_original,
+          vencimiento_documento:fecha_emision_formato,
+          periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+          vigencia_documento: vigencia,
+          moneda: cliente.CURNCYID.trim(),
+          fecha_creacion:fechaFormateada,
           comentario:comentario,
-          sopnumbe: client,
           basereal: basebs,
           fechasEmisionOriginal:fechasEmisionOriginal,
           montobase: montobase,
@@ -2860,6 +3461,10 @@ export class ClientCalculatedService {
   async getProformascalculatedInvBaruta(CUSTNMBR, PAGE) {
     let montocalculado = 0;
     let tasabasenow;
+    let fecha_emision_formato;
+    let fecha_emision_original;
+    let vigencia;
+    let fechaFormateada;
     const fechaHoy = new Date();
     const fechaISO = fechaHoy.toISOString().split('T')[0];
     const dia = fechaHoy.getDate();
@@ -2948,7 +3553,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -2959,7 +3564,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -3001,7 +3606,7 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
     const clientsResult = await this.apolloClientInvBaruta.query({
       query: GET_CLIENTS,
@@ -3042,7 +3647,49 @@ export class ClientCalculatedService {
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
-  
+      const fechaaa=`${year}-${month}-${day}`;
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+          
+        const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        
+        const day = (formato.getDate()+1).toString().padStart(2, '0');
+        const month = (formato.getMonth() + 1).toString().padStart(2, '0');
+        const year = formato.getFullYear();
+        fecha_emision_formato= `${day}-${month}-${year}`;
+        fecha_emision_original= `${year}-${month}-${day}`;
+        //console.log(fecha_emision_original)
+      } else {
+        fecha_emision_formato=fechaa;
+        fecha_emision_original=fechaaa; 
+      }
+
+      const fecha1=new Date(cliente.DOCDATE).getTime();
+      const now=new Date().getTime();
+      const fecha2=new Date(cliente.work_history[0]?.USRDAT02).getTime();
+      if(cliente.work_history[0]?.USRDEF03?.trim() !== ''){
+        if(now>fecha1){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      }else{
+        if(now>fecha2){
+          vigencia= 'VENCIDA';
+        }else{
+          vigencia= 'VIGENTE';
+        }
+      } 
+      const fecha = new Date(cliente.CREATDDT);
+      const opciones: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+      };
+      fechaFormateada = fecha.toLocaleString('en', opciones);
+
       let fechasEmisionOriginal = [];
       if (cliente.work_history && cliente.work_history[0] && cliente.work_history[0].USRDEF03?.trim()) {
         const formato = new Date(cliente.work_history[0].USRDAT02);
@@ -3162,7 +3809,7 @@ export class ClientCalculatedService {
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -3192,11 +3839,27 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
@@ -3208,8 +3871,24 @@ export class ClientCalculatedService {
         });
         if(flag1===0){
               resultados.push({
+                numero_documento: cliente.SOPNUMBE.trim(),
+                cuenta_contrato: cliente.PRSTADCD.trim(),
+                base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                porcentaje_impuesto: comentario,
+                total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                fecha_emision:fechaaa,
+                fecha_emision_formato:fecha_emision_formato,
+                fecha_emision_original:fecha_emision_original,
+                vencimiento_documento:fecha_emision_formato,
+                periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                vigencia_documento: vigencia,
+                moneda: cliente.CURNCYID.trim(),
+                fecha_creacion:fechaFormateada,
                 comentario:comentario,
-                sopnumbe: client,
                 basereal: parseFloat(basebs.toFixed(2)),
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montobase:parseFloat(montobase.toFixed(2)),
@@ -3224,12 +3903,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async fechastasas(usdnow,eurnow,ptrnow,fecha_emision_original,basebs){
-
-    return 'clientesConNombreCompletos';
-    
-    
-  }
+  
 
   create(createClientCalculatedDto: CreateClientCalculatedDto) {
     return 'This action adds a new clientCalculated';

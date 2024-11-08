@@ -14,14 +14,12 @@ export class ClientCalculatedController {
     @Param('COMPANY') COMPANY: string,
     //@Query('type') type: string
   ) {
-      // Convertir PAGE a un número entero
       const pageNumber = parseInt(PAGE, 10);
       const usdnow=0;
       const eurnow=0;
       const ptrnow=0;
       const fecha_emision_original=0;
       const basebs=0;
-    // Asegúrate de que PAGE sea un número entero
     if (!Number.isInteger(pageNumber)) {
       throw new BadRequestException('PAGE must be an integer');
     }
@@ -44,6 +42,7 @@ export class ClientCalculatedController {
         return this.clientCalculatedService.getProformascalculatedInvBaruta(CUSTNMBR, pageNumber);
       }
   }
+
 
   /*@Get(':CUSTNMBR/:PAGE')
   async getProformascalculated(

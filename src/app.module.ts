@@ -5,9 +5,10 @@ import { ClientCalculatedModule } from './client-calculated/client-calculated.mo
 import { ProformasCalculatedModule } from './proformas-calculated/proformas-calculated.module';
 import { ClientInfoModule } from './client-proform-info/client-proform-info.module';
 import { ApolloModule } from './apollo/apollo.module';
+import { CountProformClientsModule } from './count-proform-clients/count-proform-clients.module';
 
 @Module({
-  imports: [ClientCalculatedModule, ProformasCalculatedModule, ClientInfoModule],
+  imports: [ClientCalculatedModule, ProformasCalculatedModule, ClientInfoModule, CountProformClientsModule],
   controllers: [AppController],
   providers: [AppService],
 })

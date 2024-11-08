@@ -28,3 +28,12 @@ export const GET_CLIENTS= gql`
     }
 }
 `;
+
+export const GET_COUNTPROFORMAS= gql` 
+    query countProformasByRIF($custnmbr: String!) {
+        countProformasByRIF(CUSTNMBR: $custnmbr) {
+            CUSTNMBR
+            proformasCount
+        }
+    }
+`;
