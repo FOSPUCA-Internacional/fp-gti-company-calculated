@@ -21,7 +21,7 @@ RUN apt-get update && apt-get upgrade && apt-get install tzdata -y vim
 RUN apt install openssl -y
 
 # Configura la zona horaria
-ENV TZ=America/Caracas  
+ENV TZ=America/Caracas
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN npm run build
