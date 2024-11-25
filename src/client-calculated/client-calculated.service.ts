@@ -124,7 +124,7 @@ export class ClientCalculatedService {
     }
   }
 
-  async getProformascalculatedChacao(CUSTNMBR, PAGE) {
+  async getProformascalculatedChacao(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -220,7 +220,7 @@ export class ClientCalculatedService {
     };
     
     const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
-    console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
+    //console.log(aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf )
 
     const clientOV = await this.apolloClientOV.query({
       query: GET_USERS,
@@ -231,7 +231,7 @@ export class ClientCalculatedService {
 
     const { data: clientOVData } = clientOV;
     const clientesOV = clientOVData.findUSER || [];
-    console.log(clientesOV)
+    //console.log(clientesOV)
     const obtenerinfocliente = () => {
       const result = {especial: null, aplica_islr: null, aplica_iae: null, aplica_tf: null};
       //console.log(clientesOV.especial)
@@ -273,13 +273,15 @@ export class ClientCalculatedService {
   
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
-    console.log(especial, aplica_islr, aplica_iae, aplica_tf);
+    //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
     
     const clientsResult = await this.apolloClientchacao.query({
       query: GET_CLIENTS,
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -311,13 +313,16 @@ export class ClientCalculatedService {
       const comentario = cliente.work_history[0]?.COMMENT_1?.trim();
       const basereal = cliente.SUBTOTAL;
       const formato = new Date(cliente.DOCDATE);
+      //console.log(formato);
       const year = formato.getUTCFullYear();
       const month = (formato.getUTCMonth() + 1).toString().padStart(2, '0');
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      //console.log(cliente.work_history[0]?.USRDEF03?.trim());
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
+        //console.log(formato);
         const day = (formato.getDate()+1).toString().padStart(2, '0');
         const month = (formato.getMonth() + 1).toString().padStart(2, '0');
         const year = formato.getFullYear();
@@ -471,10 +476,21 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -504,7 +520,7 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
                 numero_documento: cliente.SOPNUMBE.trim(),
@@ -529,7 +545,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -559,7 +576,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -568,7 +586,7 @@ export class ClientCalculatedService {
     return resultados;
   }
   
-  async getProformascalculatedManeiro(CUSTNMBR, PAGE) {
+  async getProformascalculatedManeiro(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -725,6 +743,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -760,7 +780,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         
@@ -950,7 +970,7 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
                 numero_documento: cliente.SOPNUMBE.trim(),
@@ -1013,7 +1033,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async getProformascalculatedCaroni(CUSTNMBR, PAGE) {
+  async getProformascalculatedCaroni(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -1170,6 +1190,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   //console.log(clientsResult)
@@ -1206,7 +1228,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         
@@ -1459,7 +1481,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async getProformascalculatedHatillo(CUSTNMBR, PAGE) {
+  async getProformascalculatedHatillo(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -1609,12 +1631,14 @@ export class ClientCalculatedService {
     const {especial, aplica_islr, aplica_iae, aplica_tf} = obtenerinfocliente();
 
     //console.log(especial, aplica_islr, aplica_iae, aplica_tf);
-    
+    //console.log(typeof YEAR);
     const clientsResult = await this.apolloClientHatillo.query({
       query: GET_CLIENTS,
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -1650,7 +1674,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         
@@ -1841,7 +1865,7 @@ export class ClientCalculatedService {
           const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
           const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-          console.log(base_imponible_rebaja_base)
+          //console.log(base_imponible_rebaja_base)
           const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
               resultados.push({
                 numero_documento: cliente.SOPNUMBE.trim(),
@@ -1904,7 +1928,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async getProformascalculatedBaruta(CUSTNMBR, PAGE) {
+  async getProformascalculatedBaruta(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -1966,6 +1990,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: rif,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
 
@@ -2072,6 +2098,8 @@ export class ClientCalculatedService {
         variables: {
           custnmbr: CUSTNMBR,
           page: PAGE,
+          year: YearInt,
+          month: MonthInt,
         }
       });
     
@@ -2107,7 +2135,7 @@ export class ClientCalculatedService {
         const day = formato.getUTCDate().toString().padStart(2, '0');
         const fechaa = `${year}-${month}-${day}`;
         const fechaaa=`${year}-${month}-${day}`;
-        if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+        if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
             
           const formato = new Date(cliente.work_history[0]?.USRDAT02);
           
@@ -2500,7 +2528,7 @@ export class ClientCalculatedService {
         const day = formato.getUTCDate().toString().padStart(2, '0');
         const fechaa = `${year}-${month}-${day}`;
         const fechaaa=`${year}-${month}-${day}`;
-        if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+        if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
             
           const formato = new Date(cliente.work_history[0]?.USRDAT02);
           
@@ -2755,7 +2783,7 @@ export class ClientCalculatedService {
     }
   }
 
-  async getProformascalculatedSanDiego(CUSTNMBR, PAGE) {
+  async getProformascalculatedSanDiego(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -2911,6 +2939,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -2946,7 +2976,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         
@@ -3200,7 +3230,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async getProformascalculatedElTigre(CUSTNMBR, PAGE) {
+  async getProformascalculatedElTigre(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -3261,6 +3291,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -3279,7 +3311,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         
@@ -3458,7 +3490,7 @@ export class ClientCalculatedService {
     return resultados;
   }
 
-  async getProformascalculatedInvBaruta(CUSTNMBR, PAGE) {
+  async getProformascalculatedInvBaruta(CUSTNMBR, PAGE, YearInt, MonthInt) {
     let montocalculado = 0;
     let tasabasenow;
     let fecha_emision_formato;
@@ -3613,6 +3645,8 @@ export class ClientCalculatedService {
       variables: {
         custnmbr: CUSTNMBR,
         page: PAGE,
+        filterYear: YearInt,
+        filterMonth: MonthInt,
       }
     });
   
@@ -3648,7 +3682,7 @@ export class ClientCalculatedService {
       const day = formato.getUTCDate().toString().padStart(2, '0');
       const fechaa = `${year}-${month}-${day}`;
       const fechaaa=`${year}-${month}-${day}`;
-      if (cliente.work_history[0]?.USRDEF03?.trim() !== '') {
+      if (cliente.work_history[0]?.USRDEF03?.trim() !== '' && cliente.work_history[0]?.USRDEF03?.trim() != undefined) {
           
         const formato = new Date(cliente.work_history[0]?.USRDAT02);
         

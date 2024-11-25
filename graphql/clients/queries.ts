@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const GET_CLIENTS= gql` 
-    query clientProformasByRIF($custnmbr: String!, $page: Int!) {
-    clientProformasByRIF(CUSTNMBR: $custnmbr, PAGE:$page ) {
+    query clientProformasByRIF($custnmbr: String!, $page: Int!, $filterYear: Int!, $filterMonth: Int!) {
+    clientProformasByRIF(CUSTNMBR: $custnmbr, PAGE:$page, FILTERYEAR:$filterYear, FILTERMONTH:$filterMonth) {
         CUSTNMBR
         proformas{
             SOPNUMBE
@@ -23,6 +23,9 @@ export const GET_CLIENTS= gql`
                 USRDAT02
                 COMMENT_1
                 USRDEF03
+            }
+            detail{
+                UNITPRCE
             }
         }
     }
