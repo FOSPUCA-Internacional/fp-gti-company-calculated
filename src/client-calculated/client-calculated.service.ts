@@ -937,6 +937,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -995,7 +1006,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -1025,7 +1037,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -1386,10 +1399,21 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+          const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+          const tarifa=UNITPRCE/tasabasearmon;
+          const tarifaval=parseFloat(tarifa.toFixed(5));
+          let finalTarifa;
+          const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+          if (decimales >= 5) {
+            finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+          } else {
+            finalTarifa = tarifa.toFixed(4);
+          }
+          const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-        console.log(base_imponible_rebaja)
+        //console.log(base_imponible_rebaja)
         const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
         const proformasarrayval= [];
         proformasarrayOV.forEach(proformaarray => {
@@ -1443,7 +1467,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -1473,7 +1498,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -1832,6 +1858,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -1890,7 +1927,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -1920,7 +1958,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -2293,6 +2332,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -2351,7 +2401,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -2381,7 +2432,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -2686,6 +2738,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -2744,7 +2807,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -2774,7 +2838,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
@@ -3134,6 +3199,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -3192,7 +3268,9 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
+
               });
               flag1=1;
           }
@@ -3222,7 +3300,9 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
+
               });
         }
       }
@@ -3459,6 +3539,17 @@ export class ClientCalculatedService {
         const montobase = divi * tasabasenow;
         const montoporcentual = (montobase * porcimpuesto) / 100;
         const montocalculado = montobase + montoporcentual;
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
   
         resultados.push({
           numero_documento: cliente.SOPNUMBE.trim(),
@@ -3482,7 +3573,8 @@ export class ClientCalculatedService {
           basereal: basebs,
           fechasEmisionOriginal:fechasEmisionOriginal,
           montobase: montobase,
-          montocalculado: montocalculado
+          montocalculado: montocalculado,
+          tarifa:tarifaConRelleno
         });
       }
     }
@@ -3840,6 +3932,17 @@ export class ClientCalculatedService {
           +(
             montobase*(aplica_tf === 1 ? aplicaTf : 0)
           );
+        const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+        const tarifa=UNITPRCE/tasabasearmon;
+        const tarifaval=parseFloat(tarifa.toFixed(5));
+        let finalTarifa;
+        const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+        if (decimales >= 5) {
+          finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+        } else {
+          finalTarifa = tarifa.toFixed(4);
+        }
+        const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
         const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
         const impuesto= (montobase*impuesto_rebaja)/100;
         const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
@@ -3898,7 +4001,8 @@ export class ClientCalculatedService {
                 fechasEmisionOriginal:fechasEmisionOriginal,
                 montocalculadobase: parseFloat(montocalculadobase.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion_base.toFixed(2)),
-                probable:parseFloat(probable_base.toFixed(2))
+                probable:parseFloat(probable_base.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
               flag1=1;
           }
@@ -3928,7 +4032,8 @@ export class ClientCalculatedService {
                 montobase:parseFloat(montobase.toFixed(2)),
                 montocalculado: parseFloat(montocalculado.toFixed(2)),
                 total_monto_retencion:parseFloat(total_monto_retencion.toFixed(2)),
-                probable:parseFloat(probable.toFixed(2))
+                probable:parseFloat(probable.toFixed(2)),
+                tarifa:tarifaConRelleno
               });
         }
       }
