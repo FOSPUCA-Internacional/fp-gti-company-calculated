@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+ import { Injectable } from '@nestjs/common';
 import { CreateClientInformationDto } from './dto/create-client-information.dto';
 import { UpdateClientInformationDto } from './dto/update-client-information.dto';
 import { GET_CLIENTS_INFO } from "graphql/client-info/queries";
@@ -19,7 +19,7 @@ export class ClientInformationService {
   constructor() {
     try {
       this.apolloClientchacao = new ApolloClient({
-        uri: 'http://localhost:4001/graphql',
+        uri: 'http://company-chacao-api-contenedor:4001/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -29,7 +29,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientManeiro = new ApolloClient({
-        uri: 'http://localhost:4002/graphql',
+        uri: 'http://company-maneiro-api-contenedor:4002/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -39,7 +39,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientCaroni = new ApolloClient({
-        uri: 'http://localhost:4000/graphql',
+        uri: 'http://company-caroni-api-contenedor:4000/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -49,7 +49,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientHatillo = new ApolloClient({
-        uri: 'http://localhost:4003/graphql',
+        uri: 'http://company-hatillo-api-contenedor:4003/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -59,7 +59,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientBaruta = new ApolloClient({
-        uri: 'http://localhost:4004/graphql',
+        uri: 'http://company-baruta-api-contenedor:4004/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -69,7 +69,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientSDiego = new ApolloClient({
-        uri: 'http://localhost:4005/graphql',
+        uri: 'http://company-sdiego-api-contenedor:4005/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -79,7 +79,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientTigre = new ApolloClient({
-        uri: 'http://localhost:4006/graphql',
+        uri: 'http://company-tigre-api-contenedor:4006/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -89,7 +89,7 @@ export class ClientInformationService {
 
     try {
       this.apolloClientInvBaruta = new ApolloClient({
-        uri: 'http://localhost:4009/graphql',
+        uri: 'http://company-invbaruta-api-contenedor:4009/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -100,7 +100,7 @@ export class ClientInformationService {
   }
 
   async getClientInformationChacao(pageNumber){
-    const infoResult = await this.apolloClientchacao.query({
+    const infoResult = await this.apolloClientchacao.query({ 
       query: GET_CLIENTS_INFO,
       variables: {
         page: pageNumber

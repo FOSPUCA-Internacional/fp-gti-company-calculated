@@ -11,7 +11,7 @@ export class ClientService {
   constructor() {
     try {
       this.ApolloClientGestionAdministracion = new ApolloClient({
-        uri: 'http://localhost:4100/graphql',
+        uri: 'http://contenedor_gestion-administracion_api:4100/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
