@@ -22,7 +22,7 @@ export class ProformasCalculatedService {
   constructor() {
     try {
       this.ApolloClientGestionAdministracion = new ApolloClient({
-        uri: 'http://contenedor_gestion-administracion_api:4100/graphql',
+        uri: 'http://10.161.22.73:4100/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -401,15 +401,20 @@ export class ProformasCalculatedService {
     return `This action updates a #${id} proformasCalculated`;
   }
 
-  async deleteproformas(nombreEmpresa,proforma1,proforma2) {
-      const { data } = await this.ApolloClientGestionAdministracion.query({
-        query: DELETE_PROFORMA,
-        variables: {
-          company: nombreEmpresa,
-          documentinit: proforma1,
-          documentend: proforma2,
-        },
-      });
-      return 'El cliente fue eliminado'
+  async deleteproformas(nombreEmpresa, proforma1, proforma2) {
+    const { data } = await this.ApolloClientGestionAdministracion.mutate({
+      mutation: DELETE_PROFORMA, 
+      variables: {
+        nombreEmpresa: nombreEmpresa,
+        proforma1: proforma1,
+        proforma2: proforma2,
+      },
+    });
+
+    if (data.removebyDocument) {
+      return 'El proceso fue exitoso';
+    } else {
+      throw new Error('No se pudo completar el proceso');
+    }
   }
 }

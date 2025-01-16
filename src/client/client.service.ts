@@ -11,7 +11,7 @@ export class ClientService {
   constructor() {
     try {
       this.ApolloClientGestionAdministracion = new ApolloClient({
-        uri: 'http://contenedor_gestion-administracion_api:4100/graphql',
+        uri: 'http://localhost:4100/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -39,10 +39,14 @@ export class ClientService {
     const { data } = await this.ApolloClientGestionAdministracion.query({
       query: DELETE_CLIENTS,
       variables: {
-        company: company,
+        nombreEmpresa: company,
         client: client,
       },
     });
-    return 'El cliente fue eliminado'
+    if (data.removebyCompanyClient) {
+      return 'El proceso fue exitoso';
+    } else {
+      throw new Error('No se pudo completar el proceso');
+    }
   }
 }
