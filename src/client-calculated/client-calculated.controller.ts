@@ -47,26 +47,6 @@ export class ClientCalculatedController {
       }
   }
 
-
-  /*@Get(':CUSTNMBR/:PAGE')
-  async getProformascalculated(
-    @Param('CUSTNMBR') CUSTNMBR: string, 
-    @Param('PAGE') PAGE: string) {
-      // Convertir PAGE a un número entero
-      const pageNumber = parseInt(PAGE, 10);
-      const usdnow=0;
-      const eurnow=0;
-      const ptrnow=0;
-      const fecha_emision_original=0;
-      const basebs=0;
-    // Asegúrate de que PAGE sea un número entero
-    if (!Number.isInteger(pageNumber)) {
-      throw new BadRequestException('PAGE must be an integer');
-    }
-
-    return this.clientCalculatedService.getProformascalculated(CUSTNMBR, pageNumber);
-     
-  }*/
 }
 
 

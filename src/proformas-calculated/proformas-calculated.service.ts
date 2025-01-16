@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateProformasCalculatedDto } from './dto/create-proformas-calculated.dto';
 import { UpdateProformasCalculatedDto } from './dto/update-proformas-calculated.dto';
 import { GET_PROFORMAS } from "graphql/proformas/queries";
+import { DELETE_PROFORMA } from "graphql/proforma-delete/mutation";
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
 @Injectable()
@@ -15,8 +16,19 @@ export class ProformasCalculatedService {
   private apolloClientTigre: ApolloClient<any>;
   private apolloClientInvBaruta: ApolloClient<any>;
   private apolloClientUsers: ApolloClient<any>;
+  private ApolloClientGestionAdministracion: ApolloClient<any>;
+
 
   constructor() {
+    try {
+      this.ApolloClientGestionAdministracion = new ApolloClient({
+        uri: 'http://contenedor_gestion-administracion_api:4100/graphql',
+        cache: new InMemoryCache(),
+      });
+      console.log('Apollo Client initialized successfully.');
+    } catch (error) {
+      console.error("Error initializing Apollo Client:", error);
+    }
     try {
       this.apolloClientchacao = new ApolloClient({
         uri: 'http://company-chacao-api-contenedor:4001/graphql',
@@ -389,7 +401,15 @@ export class ProformasCalculatedService {
     return `This action updates a #${id} proformasCalculated`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} proformasCalculated`;
+  async deleteproformas(nombreEmpresa,proforma1,proforma2) {
+      const { data } = await this.ApolloClientGestionAdministracion.query({
+        query: DELETE_PROFORMA,
+        variables: {
+          company: nombreEmpresa,
+          documentinit: proforma1,
+          documentend: proforma2,
+        },
+      });
+      return 'El cliente fue eliminado'
   }
 }

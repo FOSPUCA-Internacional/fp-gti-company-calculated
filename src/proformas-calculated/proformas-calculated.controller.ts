@@ -48,8 +48,11 @@ export class ProformasCalculatedController {
     return this.proformasCalculatedService.update(+id, updateProformasCalculatedDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.proformasCalculatedService.remove(+id);
+  @Delete(':company/:client')
+  remove(
+    @Param('nombreEmpresa') nombreEmpresa: string, 
+    @Param('proforma1') proforma1: string,
+    @Param('proforma2') proforma2: string) {
+      return this.proformasCalculatedService.deleteproformas(nombreEmpresa,proforma1,proforma2);
   }
 }
