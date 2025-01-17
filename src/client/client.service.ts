@@ -46,7 +46,7 @@ export class ClientService {
     if (data.removebyCompanyClient) {
       return 'El proceso fue exitoso';
     } else {
-      throw new Error('No se pudo completar el proceso');
+      return 'No se pudo realizar el proceso';
     }
   }
 }
