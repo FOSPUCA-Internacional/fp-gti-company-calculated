@@ -107,8 +107,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -129,8 +129,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -152,8 +152,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -174,8 +174,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -196,8 +196,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -218,8 +218,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -240,8 +240,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
@@ -262,8 +262,8 @@ export class ClientInformationService {
       }
     });
 
-   const { data: clientsbyrif } = infoResult;
-    const infoclient = clientsbyrif.clientsbyrif || [];
+    const { data: clients } = infoResult;
+    const infoclient = clients.clients || [];
     //console.log(infoclient)
     const infoarray = infoclient.map((Client) => {
       const RIF = Client.CUSTNMBR.trim();
