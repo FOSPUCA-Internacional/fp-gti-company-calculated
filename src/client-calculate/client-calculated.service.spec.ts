@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientCalculatedService } from './client-calculated.service';
+import { ClientCalculatedService } from './client-calculated-chacao.service';
 
 describe('ClientCalculatedService', () => {
   let service: ClientCalculatedService;

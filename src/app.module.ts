@@ -1,12 +1,12 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ClientCalculatedModule } from './client-calculated/client-calculated.module';
+import { ClientCalculatedModule } from './client-calculate/client-calculated.module';
 import { ProformasCalculatedModule } from './proformas-calculated/proformas-calculated.module';
 import { ClientInfoModule } from './client-proform-info/client-proform-info.module';
 import { ApolloModule } from './apollo/apollo.module';
 import { CountProformClientsModule } from './count-proform-clients/count-proform-clients.module';
-import { ClientInformationModule } from './client-information/client-information.module';
+import { ClientInformationModule } from './client-calculate-information/client-information.module';
 import { ClientModule } from './client/client.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 

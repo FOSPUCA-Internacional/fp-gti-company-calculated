@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientCalculatedController } from './client-calculated.controller';
-import { ClientCalculatedService } from './client-calculated.service';
+import { ClientCalculatedService } from './client-calculated-chacao.service';
 
 describe('ClientCalculatedController', () => {
   let controller: ClientCalculatedController;
