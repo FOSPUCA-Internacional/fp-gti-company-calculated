@@ -124,7 +124,7 @@ export class ClientCalculatedInvbarutaService {
 
     const resultados = [];
     if (!clientesConNombreCompletos || !Array.isArray(clientesConNombreCompletos) || clientesConNombreCompletos.length === 0) {
-      resultados.push('El cliente no existe en GP')
+      resultados.push('No existe data para este cliente')
     }else{
       for (const cliente of clientesConNombreCompletos) {
         const sopnumbe = cliente.SOPNUMBE.trim();
