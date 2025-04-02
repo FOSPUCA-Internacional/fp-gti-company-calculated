@@ -17,7 +17,7 @@ export class ClientCalculatedServiceChacao {
   constructor() {
     try {
       this.apolloClientSecundario = new ApolloClient({
-        uri: 'http://10.161.22.73:4011/graphql',
+        uri: 'http://company-rates-api-contenedor:4011/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
