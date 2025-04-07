@@ -17,11 +17,10 @@ COPY . .
 COPY .env ./
 
 # Creates a "dist" folder with the production build
-ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y tzdata vim
-
 RUN apt install openssl -y
 
 # Configura la zona horaria
