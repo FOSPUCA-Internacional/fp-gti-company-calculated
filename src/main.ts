@@ -6,11 +6,12 @@ async function bootstrap() {
   
   app.enableCors({
     origin: ['*'],
-    //origin: ['http://localhost:3001', 'http://10.160.10.92:4051'], 
+    //origin: ['http://localhost:3001', 'http://10.160.10.37:4051'], 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'], 
     credentials: true, 
   });
+
   await app.listen(4008);
 }
 bootstrap();
