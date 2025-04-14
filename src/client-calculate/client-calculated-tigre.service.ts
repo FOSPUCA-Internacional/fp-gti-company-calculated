@@ -9,7 +9,8 @@ export class ClientCalculatedTigreService {
   constructor() {
     try {
       this.apolloClientSecundario = new ApolloClient({
-        uri: 'http://company-rates-api-contenedor:4011/graphql',
+        uri: 'http://localhost:4011/graphql',
+        //uri: 'http://company-rates-api-contenedor:4011/graphql',
         cache: new InMemoryCache(),
       });
       console.log('Apollo Client initialized successfully.');
@@ -19,7 +20,7 @@ export class ClientCalculatedTigreService {
   }
 
   async getProformasdataElTigre(payload: any) {
-    const { tasasDecambio1, clientesConNombreCompletos } = payload;
+    const { tasasDecambio1, clientesOV, proformasarrayOV, clientesConNombreCompletos } = payload;
       let montocalculado = 0;
       let tasabasenow;
       let fecha_emision_formato;
@@ -59,6 +60,71 @@ export class ClientCalculatedTigreService {
     
       const {usdnow, eurnow, ptrnow} = obtenerValores1();
       tasabasenow = ptrnow;
+
+      const fs = require('fs');
+    const data = fs.readFileSync('./impuestos_empresas.json');
+    const impuestos = JSON.parse(data);
+    const municipioCliente = 'Chacao';
+
+    const obtenerInfoimpuesto = (municipioCliente) => {
+      const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
+    
+      const impuestosCliente = impuestos.find(impuesto => impuesto.municipio === municipioCliente);
+    
+      if (impuestosCliente) {
+        let impuestoIaeMasReciente = null;
+        impuestosCliente.impuestos.forEach(impuesto => {
+          
+          switch (impuesto.nombre) {
+            case 'porcentaje_iva':
+              result.aplicaEspecial = impuesto.porcentaje;
+              break;
+            case 'porcentaje_islr':
+                result.aplicaIslr = impuesto.porcentaje;
+              break;
+            case 'porcentaje_iae':
+              const fechaC = new Date(impuesto.fechaC);
+              if (!impuestoIaeMasReciente || fechaC > new Date(impuestoIaeMasReciente.fechaC)) {
+                impuestoIaeMasReciente = impuesto;
+              }
+              if (impuestoIaeMasReciente) {
+                result.aplicaIae = impuestoIaeMasReciente.porcentaje;
+              }
+              break;
+            case 'porcentaje_tf':
+              result.aplicaTf = impuesto.porcentaje;
+              break;
+          }
+        });
+      }
+    
+      return result;
+    };
+
+      const { aplicaEspecial, aplicaIslr, aplicaIae, aplicaTf } = obtenerInfoimpuesto(municipioCliente);
+   
+
+    let especial: number;
+    let aplica_islr: number;
+    let aplica_iae: number;
+    let aplica_tf: number;
+
+    const obtenerinfocliente = () => {
+      if (clientesOV === 0) {
+        return { especial: 0, aplica_islr: 0, aplica_iae: 0, aplica_tf: 0 };
+      } else {   
+        return {
+          especial: clientesOV?.especial === 1 ? clientesOV.especial : 0,
+          aplica_islr: clientesOV?.aplica_islr === 1 ? clientesOV.aplica_islr : 0,
+          aplica_iae: clientesOV?.aplica_iae === 1 ? clientesOV.aplica_iae : 0,
+          aplica_tf: clientesOV?.aplica_tf === 1 ? clientesOV.aplica_tf : 0,
+        };
+      }
+    };
+
+    ({ especial, aplica_islr, aplica_iae, aplica_tf } = obtenerinfocliente());
+
+  
       
       const resultados = [];
       if (!clientesConNombreCompletos || !Array.isArray(clientesConNombreCompletos) || clientesConNombreCompletos.length === 0) {
@@ -217,7 +283,7 @@ export class ClientCalculatedTigreService {
                 tasabasenow = eurnow;
               }
             }
-      
+            //calculo para bs 
             const client = cliente.SOPNUMBE.trim();
             const basebs = cliente.SUBTOTAL;
             const base_imponible = parseFloat(basebs.toFixed(2));
@@ -225,47 +291,158 @@ export class ClientCalculatedTigreService {
             const montobase = divi * tasabasenow;
             const montoporcentual = (montobase * porcimpuesto) / 100;
             const montocalculado = montobase + montoporcentual;
-            const UNITPRCE= cliente.detail[0]?.UNITPRCE;
-            const tarifa=UNITPRCE/tasabasearmon;
-            const tarifaval=parseFloat(tarifa.toFixed(5));
-            let finalTarifa;
-            const decimales = tarifaval.toString().split(".")[1]?.length || 0;
-            if (decimales >= 5) {
-              finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
-            } else {
-              finalTarifa = tarifa.toFixed(4);
+            const base_imponible_rebaja=
+            (
+              montobase*(aplica_islr === 1 ? aplicaIslr : 0)
+            )
+            +(
+              montobase*(aplica_iae === 1 ? aplicaIae : 0)
+            ) 
+            +(
+              montobase*(aplica_tf === 1 ? aplicaTf : 0)
+            );
+            let finalTarifa;  
+            if (cliente.CURNCYID.trim()=='USD'){
+              finalTarifa=(Math.floor(cliente.ORSUBTOT* 10000) / 10000).toFixed(2);
+            }else{ 
+              const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+              const tarifa=UNITPRCE/tasabasearmon;
+              const tarifaval=parseFloat(tarifa.toFixed(5));
+              
+              const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+              if (decimales >= 5) {
+                finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+              } else {
+                finalTarifa = tarifa.toFixed(4);
+              }
             }
             const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
-      
+            const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
+            const impuesto= (montobase*impuesto_rebaja)/100;
+            const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
+            //console.log(base_imponible_rebaja)
+            const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+            const proformasarrayval= [];
+            proformasarrayOV.forEach(proformaarray => {
+              const client2=proformaarray.numero_documento;
+              if(proformaarray.numero_documento === client){
+                proformasarrayval.push({
+                  client2:client2,
+                  valida:1
+                })
+              }
+            })
+            let flag1=0;
+            
+            //calculo en dolares
+            const basedolar = parseFloat(cliente.ORSUBTOT.toFixed(2));
+            const porcimpuestodolar = cliente.sales_taxes_work_history[0]?.TXDTLPCTAMT;
+            const montoporcentualdolar = (basedolar * porcimpuestodolar) / 100;
+            const montocalculadodolar = basedolar + montoporcentualdolar;
+            const base_imponible_rebaja_dolar=
+          (
+            basedolar*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            basedolar*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            basedolar*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+          const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
+          const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
+          const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
+          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : 0;
+          proformasarrayval.forEach(proformaarray => {
+            if(proformaarray.client2 === client && proformaarray.valida===1){
+              const montoporcentualbase = (basebs * porcimpuesto) / 100;
+              const montocalculadobase = montoporcentualbase + basebs;
+              const base_imponible_rebaja_base=
+              (
+                base_imponible*(aplica_islr === 1 ? aplicaIslr : 0)
+              )
+              +(
+                base_imponible*(aplica_iae === 1 ? aplicaIae : 0)
+              ) 
+              +(
+                base_imponible*(aplica_tf === 1 ? aplicaTf : 0)
+              );
+            const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
+            const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
+            const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
+            const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+            //console.log(base_imponible_rebaja_base)
+            
+               
             resultados.push({
-              numero_documento: cliente.SOPNUMBE.trim(),
-              cuenta_contrato: cliente.PRSTADCD.trim(),
-              base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
-              base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
-              porcentaje_impuesto: comentario,
-              total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
-              total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
-              monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
-              monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
-              fecha_emision:fechaaa,
-              fecha_emision_formato:fecha_emision_formato,
-              fecha_emision_original:fecha_emision_original,
-              vencimiento_documento:fecha_emision_formato,
-              periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
-              vigencia_documento: vigencia,
-              moneda: cliente.CURNCYID.trim(),
-              fecha_creacion:fechaFormateada,
-              comentario:comentario,
-              basereal: Math.round(basebs * 100) / 100,
-              fechasEmisionOriginal:fechasEmisionOriginal,
-              montobase: Math.round(montobase* 100) / 100,
-              montocalculado:  Math.round(montocalculado* 100) / 100,
-              tarifa:tarifaConRelleno
-            });
+                  numero_documento: cliente.SOPNUMBE.trim(),
+                  cuenta_contrato: cliente.PRSTADCD.trim(),
+                  base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                  base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                  porcentaje_impuesto: comentario,
+                  total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                  total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                  monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                  monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                  fecha_emision:fechaaa,
+                  fecha_emision_formato:fecha_emision_formato,
+                  fecha_emision_original:fecha_emision_original,
+                  vencimiento_documento:fecha_emision_formato,
+                  periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                  vigencia_documento: vigencia,
+                  moneda: cliente.CURNCYID.trim(),
+                  fecha_creacion:fechaFormateada,
+                  comentario:comentario,
+                  basereal: Math.round(basebs* 100) / 100,
+                  fechasEmisionOriginal:fechasEmisionOriginal,
+                  montocalculadobase: Math.round(montocalculadobase* 100) / 100,
+                  total_monto_retencion:Math.round(total_monto_retencion_base* 100) / 100,
+                  probable:Math.round(probable_base* 100) / 100,
+                  tarifa:tarifaConRelleno,
+                  baserealdolar: Math.round(basedolar* 100) / 100,
+                  montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                  total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                  probable_dolar:Math.round(probabledolar* 100) / 100
+                });
+                flag1=1;
+            }
+          });
+          if(flag1===0){
+                resultados.push({
+                  numero_documento: cliente.SOPNUMBE.trim(),
+                  cuenta_contrato: cliente.PRSTADCD.trim(),
+                  base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),
+                  base_imponible_usd: parseFloat((cliente.ORSUBTOT).toFixed(2)),
+                  porcentaje_impuesto: comentario,
+                  total_impuesto: parseFloat((cliente.TAXAMNT).toFixed(2)),
+                  total_impuesto_usd: parseFloat((cliente.ORTAXAMT).toFixed(2)),
+                  monto_documento: parseFloat((cliente.DOCAMNT).toFixed(2)),
+                  monto_documento_usd: parseFloat((cliente.ORDOCAMT).toFixed(2)),
+                  fecha_emision:fechaaa,
+                  fecha_emision_formato:fecha_emision_formato,
+                  fecha_emision_original:fecha_emision_original,
+                  vencimiento_documento:fecha_emision_formato,
+                  periodo: cliente.work_history[0]?.COMMENT_1?.trim() ? cliente.work_history[0]?.COMMENT_1?.trim() : '',
+                  vigencia_documento: vigencia,
+                  moneda: cliente.CURNCYID.trim(),
+                  fecha_creacion:fechaFormateada,
+                  comentario:comentario,
+                  basereal: Math.round(basebs* 100) / 100,
+                  fechasEmisionOriginal:fechasEmisionOriginal,
+                  montobase:Math.round(montobase* 100) / 100,
+                  montocalculado: Math.round(montocalculado* 100) / 100,
+                  total_monto_retencion:Math.round(total_monto_retencion* 100) / 100,
+                  probable:Math.round(probable* 100) / 100,
+                  tarifa:tarifaConRelleno,
+                  baserealdolar: Math.round(basedolar* 100) / 100,
+                  montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                  total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                  probable_dolar:Math.round(probabledolar* 100) / 100
+                });
           }
         }
       }
-    
+    }
       return resultados;
     }
 }
