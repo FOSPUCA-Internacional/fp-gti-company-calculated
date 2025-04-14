@@ -371,7 +371,7 @@ export class ClientCalculatedSanDiegoService {
               const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
               const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
               //console.log(base_imponible_rebaja_base)
-              const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+              const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : montocalculadobase;
                   resultados.push({
                     numero_documento: cliente.SOPNUMBE.trim(),
                     cuenta_contrato: cliente.PRSTADCD.trim(),

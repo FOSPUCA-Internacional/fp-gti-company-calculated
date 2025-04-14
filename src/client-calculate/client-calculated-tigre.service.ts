@@ -62,9 +62,9 @@ export class ClientCalculatedTigreService {
       tasabasenow = ptrnow;
 
       const fs = require('fs');
-    const data = fs.readFileSync('./impuestos_empresas.json');
-    const impuestos = JSON.parse(data);
-    const municipioCliente = 'Chacao';
+      const data = fs.readFileSync('./impuestos_empresas.json');
+      const impuestos = JSON.parse(data);
+      const municipioCliente = 'ElTigre';
 
     const obtenerInfoimpuesto = (municipioCliente) => {
       const result = { aplicaEspecial: null, aplicaIslr: null, aplicaIae: null, aplicaTf: null };
