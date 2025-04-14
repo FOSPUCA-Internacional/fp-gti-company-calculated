@@ -9,6 +9,7 @@ export class ClientCalculatedBarutaService {
   constructor() {
     try {
       this.apolloClientSecundario = new ApolloClient({
+        //uri: 'http://localhost:4011/graphql',
         uri: 'http://company-rates-api-contenedor:4011/graphql',
         cache: new InMemoryCache(),
       });
@@ -280,7 +281,7 @@ export class ClientCalculatedBarutaService {
                   tasabasenow = eurnow;
                 }
               }
-        
+              //calculo para bs 
               const client = cliente.SOPNUMBE.trim();
               const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
               const base_imponible = parseFloat(basebs.toFixed(2));
@@ -298,16 +299,21 @@ export class ClientCalculatedBarutaService {
                 +(
                   montobase*(aplica_tf === 1 ? aplicaTf : 0)
                 );
-              const UNITPRCE= cliente.detail[0]?.UNITPRCE;
-              const tarifa=UNITPRCE/tasabasearmon;
-              const tarifaval=parseFloat(tarifa.toFixed(5));
-              let finalTarifa;
-              const decimales = tarifaval.toString().split(".")[1]?.length || 0;
-              if (decimales >= 5) {
-                finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
-              } else {
-                finalTarifa = tarifa.toFixed(4);
-              }
+                let finalTarifa;
+                if (cliente.CURNCYID.trim()=='USD'){
+                  finalTarifa=(Math.floor(cliente.ORSUBTOT* 10000) / 10000).toFixed(2);
+                }else{ 
+                  const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+                  const tarifa=UNITPRCE/tasabasearmon;
+                  const tarifaval=parseFloat(tarifa.toFixed(5));
+                  
+                  const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+                  if (decimales >= 5) {
+                    finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+                  } else {
+                    finalTarifa = tarifa.toFixed(4);
+                  }
+                }
               const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
               const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
               const impuesto= (montobase*impuesto_rebaja)/100;
@@ -325,6 +331,25 @@ export class ClientCalculatedBarutaService {
                 }
               })
               let flag1=0;
+              //calculo en dolares
+          const basedolar = parseFloat(cliente.ORSUBTOT.toFixed(2));
+          const porcimpuestodolar = cliente.sales_taxes_work_history[0]?.TXDTLPCTAMT;
+          const montoporcentualdolar = (basedolar * porcimpuestodolar) / 100;
+          const montocalculadodolar = basedolar + montoporcentualdolar;
+          const base_imponible_rebaja_dolar=
+          (
+            basedolar*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            basedolar*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            basedolar*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+          const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
+          const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
+          const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
+          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : 0;
               proformasarrayval.forEach(proformaarray => {
                 if(proformaarray.client2 === client && proformaarray.valida===1){
                   const montoporcentualbase = (basebs * porcimpuesto) / 100;
@@ -368,7 +393,11 @@ export class ClientCalculatedBarutaService {
                       montocalculadobase: Math.round(montocalculadobase* 100) / 100,
                       total_monto_retencion:Math.round(total_monto_retencion_base* 100) / 100,
                       probable:Math.round(probable_base* 100) / 100,
-                      tarifa:tarifaConRelleno
+                      tarifa:tarifaConRelleno,
+                      baserealdolar: Math.round(basedolar* 100) / 100,
+                      montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                      total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                      probable_dolar:Math.round(probabledolar* 100) / 100
                     });
                     flag1=1;
                 }
@@ -399,7 +428,11 @@ export class ClientCalculatedBarutaService {
                       montocalculado: Math.round(montocalculado* 100) / 100,
                       total_monto_retencion:Math.round(total_monto_retencion* 100) / 100,
                       probable:Math.round(probable* 100) / 100,
-                      tarifa:tarifaConRelleno
+                      tarifa:tarifaConRelleno,
+                      baserealdolar: Math.round(basedolar* 100) / 100,
+                      montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                      total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                      probable_dolar:Math.round(probabledolar* 100) / 100
                     });
               }
             }
@@ -628,7 +661,7 @@ export class ClientCalculatedBarutaService {
                   tasabasenow = eurnow;
                 }
               }
-    
+            //calculo para bs 
             const client = cliente.SOPNUMBE.trim();
             const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
             const base_imponible = parseFloat(basebs.toFixed(2));
@@ -646,16 +679,21 @@ export class ClientCalculatedBarutaService {
               +(
                 montobase*(aplica_tf === 1 ? aplicaTf : 0)
               );
-            const UNITPRCE= cliente.detail[0]?.UNITPRCE;
-            const tarifa=UNITPRCE/tasabasearmon;
-            const tarifaval=parseFloat(tarifa.toFixed(5));
-            let finalTarifa;
-            const decimales = tarifaval.toString().split(".")[1]?.length || 0;
-            if (decimales >= 5) {
-              finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
-            } else {
-              finalTarifa = tarifa.toFixed(4);
-            }
+              let finalTarifa;  
+              if (cliente.CURNCYID.trim()=='USD'){
+                finalTarifa=(Math.floor(cliente.ORSUBTOT* 10000) / 10000).toFixed(2);
+              }else{ 
+                const UNITPRCE= cliente.detail[0]?.UNITPRCE;
+                const tarifa=UNITPRCE/tasabasearmon;
+                const tarifaval=parseFloat(tarifa.toFixed(5));
+                
+                const decimales = tarifaval.toString().split(".")[1]?.length || 0;
+                if (decimales >= 5) {
+                  finalTarifa = (Math.floor(tarifa * 10000) / 10000).toFixed(4);
+                } else {
+                  finalTarifa = tarifa.toFixed(4);
+                }
+              }
             const tarifaConRelleno = finalTarifa.padEnd(finalTarifa.length + 1, '0')
             const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
             const impuesto= (montobase*impuesto_rebaja)/100;
@@ -674,7 +712,25 @@ export class ClientCalculatedBarutaService {
             })
             let flag1=0;
             //console.log(proformasarrayval)
-            
+            //calculo en dolares
+          const basedolar = parseFloat(cliente.ORSUBTOT.toFixed(2));
+          const porcimpuestodolar = cliente.sales_taxes_work_history[0]?.TXDTLPCTAMT;
+          const montoporcentualdolar = (basedolar * porcimpuestodolar) / 100;
+          const montocalculadodolar = basedolar + montoporcentualdolar;
+          const base_imponible_rebaja_dolar=
+          (
+            basedolar*(aplica_islr === 1 ? aplicaIslr : 0)
+          )
+          +(
+            basedolar*(aplica_iae === 1 ? aplicaIae : 0)
+          ) 
+          +(
+            basedolar*(aplica_tf === 1 ? aplicaTf : 0)
+          );
+          const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
+          const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
+          const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
+          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : 0; 
             proformasarrayval.forEach(proformaarray => {
               //console.log(proformaarray.client2 === client && proformaarray.valida===1)
               if(proformaarray.client2 === client && proformaarray.valida===1){
@@ -720,7 +776,11 @@ export class ClientCalculatedBarutaService {
                     montocalculadobase: Math.round(montocalculadobase* 100) / 100,
                     total_monto_retencion:Math.round(total_monto_retencion_base* 100) / 100,
                     probable:Math.round(probable_base* 100) / 100,
-                    tarifa:tarifaConRelleno
+                    tarifa:tarifaConRelleno,
+                    baserealdolar: Math.round(basedolar* 100) / 100,
+                    montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                    total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                    probable_dolar:Math.round(probabledolar* 100) / 100
                   });
                   flag1=1;
               }
@@ -751,7 +811,11 @@ export class ClientCalculatedBarutaService {
                 montocalculado: Math.round(montocalculado* 100) / 100,
                 total_monto_retencion:Math.round(total_monto_retencion* 100) / 100,
                 probable:Math.round(probable* 100) / 100,
-                tarifa:tarifaConRelleno
+                tarifa:tarifaConRelleno,
+                baserealdolar: Math.round(basedolar* 100) / 100,
+                montocalculadodolar: Math.round(montocalculadodolar* 100) / 100,
+                total_monto_retencion_dolar:Math.round(total_monto_retencion_dolar* 100) / 100,
+                probable_dolar:Math.round(probabledolar* 100) / 100
               });
             }
             //console.log('flag: '+flag1)
