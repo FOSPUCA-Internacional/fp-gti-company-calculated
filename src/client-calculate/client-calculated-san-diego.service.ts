@@ -352,7 +352,7 @@ export class ClientCalculatedSanDiegoService {
           const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
           const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
           const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
-          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : 0;
+          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : montocalculadodolar;
             proformasarrayval.forEach(proformaarray => {
               if(proformaarray.client2 === client && proformaarray.valida===1){
                 const montoporcentualbase = (basebs * porcimpuesto) / 100;

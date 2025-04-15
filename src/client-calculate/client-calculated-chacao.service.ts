@@ -329,7 +329,7 @@ export class ClientCalculatedServiceChacao {
           const impuesto= (montobase*impuesto_rebaja)/100;
           const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
           //console.log(base_imponible_rebaja)
-          const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+          const probable= especial === 1 ? montocalculado-total_monto_retencion : montocalculado;
           const proformasarrayval= [];
           proformasarrayOV.forEach(proformaarray => {
             const client2=proformaarray.numero_documento;
@@ -359,7 +359,7 @@ export class ClientCalculatedServiceChacao {
           const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
           const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
           const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
-          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : 0; 
+          const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : montocalculadodolar; 
           proformasarrayval.forEach(proformaarray => {
             if(proformaarray.client2 === client && proformaarray.valida===1){
               const montoporcentualbase = (basebs * porcimpuesto) / 100;
@@ -377,7 +377,7 @@ export class ClientCalculatedServiceChacao {
             const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
             const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
             const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-            const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+            const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : montocalculadobase;
             //console.log(base_imponible_rebaja_base)
             
                
