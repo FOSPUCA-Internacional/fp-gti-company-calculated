@@ -321,11 +321,7 @@ export class ClientCalculatedTigreService {
             const impuesto= (montobase*impuesto_rebaja)/100;
             const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
             //console.log(base_imponible_rebaja)
-<<<<<<< HEAD
-            const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
-=======
             const probable= especial === 1 ? montocalculado-total_monto_retencion : montocalculado;
->>>>>>> develop
             const proformasarrayval= [];
             proformasarrayOV.forEach(proformaarray => {
               const client2=proformaarray.numero_documento;
