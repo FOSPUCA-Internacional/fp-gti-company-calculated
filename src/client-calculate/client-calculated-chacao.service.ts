@@ -291,6 +291,7 @@ export class ClientCalculatedServiceChacao {
               tasabasenow = eurnow;
             }
           }
+          console.log(tasabasenow)
           //calculo para bs 
           const client = cliente.SOPNUMBE.trim();
           const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
