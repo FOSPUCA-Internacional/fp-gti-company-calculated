@@ -279,7 +279,7 @@ export class ClientCalculatedServiceChacao {
           const datearmonizacion = new Date('2024-02-01');
           const datearmonizacionn = datearmonizacion.getTime();
     
-          if (fechaDate.getTime() < datearmonizacionn) {
+          if (fechaDate.getTime() < datearmonizacionn && cliente.CURNCYID.trim()!='USD') {
             tasabasearmon = PTR;
             tasabasenow = ptrnow;
           } else if (fechaDate.getTime() >= datearmonizacionn) {
@@ -291,12 +291,12 @@ export class ClientCalculatedServiceChacao {
               tasabasenow = eurnow;
             }
           }
-          console.log(tasabasenow)
+          //console.log(tasabasenow)
           //calculo para bs 
           const client = cliente.SOPNUMBE.trim();
           const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
           const base_imponible = parseFloat(basebs.toFixed(2));
-          const divi = base_imponible / tasabasearmon;
+          const divi = base_imponible / tasabasearmon ;
           const montobase = divi * tasabasenow;
           const montoporcentual = (montobase * porcimpuesto) / 100;
           const montocalculado = montobase + montoporcentual;
@@ -329,8 +329,14 @@ export class ClientCalculatedServiceChacao {
           const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto= (montobase*impuesto_rebaja)/100;
           const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-          //console.log(base_imponible_rebaja)
-          const probable= especial === 1 ? montocalculado-total_monto_retencion : montocalculado;
+          const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+          const tieneTratamientoEspecial = especial === 1;
+
+            const probable = !esMonedaExtranjera
+              ? (tieneTratamientoEspecial
+                  ? montocalculado-total_monto_retencion
+                  : montocalculado)
+              : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
           const proformasarrayval= [];
           proformasarrayOV.forEach(proformaarray => {
             const client2=proformaarray.numero_documento;
@@ -360,6 +366,7 @@ export class ClientCalculatedServiceChacao {
           const impuesto_rebaja_dolar = porcimpuestodolar *(especial ? aplicaEspecial : 0);
           const impuestodolar= (basedolar*impuesto_rebaja_dolar)/100;
           const total_monto_retencion_dolar= parseFloat((base_imponible_rebaja_dolar + impuestodolar).toFixed(2));
+
           const probabledolar= especial === 1 ? montocalculadodolar-total_monto_retencion_dolar : montocalculadodolar; 
           proformasarrayval.forEach(proformaarray => {
             if(proformaarray.client2 === client && proformaarray.valida===1){
@@ -378,7 +385,14 @@ export class ClientCalculatedServiceChacao {
             const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
             const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
             const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-            const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : montocalculadobase;
+            const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+            const tieneTratamientoEspecial = especial === 1;
+            
+            const probable_base = !esMonedaExtranjera
+              ? (tieneTratamientoEspecial
+                  ? montocalculadobase - total_monto_retencion_base
+                  : montocalculadobase)
+              : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
             //console.log(base_imponible_rebaja_base)
             
                

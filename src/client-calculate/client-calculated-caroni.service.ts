@@ -266,7 +266,7 @@ export class ClientCalculatedCaroniService {
           const datearmonizacion = new Date('2024-02-01');
           const datearmonizacionn = datearmonizacion.getTime();
     
-          if (fechaDate.getTime() < datearmonizacionn) {
+          if (fechaDate.getTime() < datearmonizacionn && cliente.CURNCYID.trim()!='USD') {
             tasabasearmon = PTR;
             tasabasenow = ptrnow;
           } else if (fechaDate.getTime() >= datearmonizacionn) {
@@ -282,7 +282,7 @@ export class ClientCalculatedCaroniService {
           const client = cliente.SOPNUMBE.trim();
           const basebs = parseFloat(cliente.SUBTOTAL.toFixed(2));
           const base_imponible = parseFloat(basebs.toFixed(2));
-          const divi = base_imponible / tasabasearmon;
+          const divi = cliente.CURNCYID.trim() != 'USD' ? base_imponible / tasabasearmon : parseFloat(cliente.ORSUBTOT.toFixed(2));
           const montobase = divi * tasabasenow;
           const montoporcentual = (montobase * porcimpuesto) / 100;
           const montocalculado = montobase + montoporcentual;
@@ -315,8 +315,14 @@ export class ClientCalculatedCaroniService {
           const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
           const impuesto= (montobase*impuesto_rebaja)/100;
           const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-          //console.log(base_imponible_rebaja)
-          const probable= especial === 1 ? montocalculado-total_monto_retencion : 0;
+          const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+          const tieneTratamientoEspecial = especial === 1;
+
+            const probable = !esMonedaExtranjera
+              ? (tieneTratamientoEspecial
+                  ? montocalculado-total_monto_retencion
+                  : montocalculado)
+              : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
           const proformasarrayval= [];
           proformasarrayOV.forEach(proformaarray => {
             const client2=proformaarray.numero_documento;
@@ -364,8 +370,14 @@ export class ClientCalculatedCaroniService {
             const impuesto_rebaja_base = porcimpuesto *(especial ? aplicaEspecial : 0);
             const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
             const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
-            ////console.log(base_imponible_rebaja_base)
-            const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : 0;
+            const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+            const tieneTratamientoEspecial = especial === 1;
+            
+            const probable_base = !esMonedaExtranjera
+              ? (tieneTratamientoEspecial
+                  ? montocalculadobase - total_monto_retencion_base
+                  : montocalculadobase)
+              : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
                 resultados.push({
                   cuenta_contrato: cliente.PRSTADCD.trim(),
                   base_imponible: parseFloat((cliente.SUBTOTAL).toFixed(2)),

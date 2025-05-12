@@ -321,8 +321,14 @@ export class ClientCalculatedSanDiegoService {
             const impuesto_rebaja = porcimpuesto *(especial ? aplicaEspecial : 0);
             const impuesto= (montobase*impuesto_rebaja)/100;
             const total_monto_retencion= parseFloat((base_imponible_rebaja + impuesto).toFixed(2))
-            //console.log(base_imponible_rebaja)
-            const probable= especial === 1 ? montocalculado-total_monto_retencion : montocalculado;
+            const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+            const tieneTratamientoEspecial = especial === 1;
+
+            const probable = !esMonedaExtranjera
+              ? (tieneTratamientoEspecial
+                  ? montocalculado-total_monto_retencion
+                  : montocalculado)
+              : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
             const proformasarrayval= [];
             proformasarrayOV.forEach(proformaarray => {
               const client2=proformaarray.numero_documento;
@@ -371,7 +377,14 @@ export class ClientCalculatedSanDiegoService {
               const impuesto_base= (base_imponible*impuesto_rebaja_base)/100;
               const total_monto_retencion_base= parseFloat((base_imponible_rebaja_base + impuesto_base).toFixed(2))
               //console.log(base_imponible_rebaja_base)
-              const probable_base= especial === 1 ? montocalculadobase-total_monto_retencion_base : montocalculadobase;
+              const esMonedaExtranjera = cliente.CURNCYID.trim() === 'USD';
+              const tieneTratamientoEspecial = especial === 1;
+              
+              const probable_base = !esMonedaExtranjera
+                ? (tieneTratamientoEspecial
+                    ? montocalculadobase - total_monto_retencion_base
+                    : montocalculadobase)
+                : parseFloat(cliente.ORDOCAMT.toFixed(2)) * tasabasenow;
                   resultados.push({
                     numero_documento: cliente.SOPNUMBE.trim(),
                     cuenta_contrato: cliente.PRSTADCD.trim(),
